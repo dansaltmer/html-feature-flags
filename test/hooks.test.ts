@@ -1,6 +1,6 @@
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { useFeatureFlag, useFeatureFlagEnabled } from './index.js'
+import { useFeatureFlag, useFeatureFlagEnabled } from '../src/index.js'
 
 const html = document.documentElement
 
@@ -84,7 +84,7 @@ describe('useFeatureFlag', () => {
 
   test('does not touch the DOM on import', async () => {
     const before = document.body.innerHTML
-    await import('./index.js')
+    await import('../src/index.js')
     expect(document.body.innerHTML).toBe(before)
     expect(html.attributes).toHaveLength(0)
   })
@@ -151,7 +151,7 @@ describe('observer lifecycle', () => {
     )
     // Fresh module so the observer is created with the stub
     vi.resetModules()
-    const fresh = await import('./index.js')
+    const fresh = await import('../src/index.js')
 
     const a = renderHook(() => fresh.useFeatureFlag('a'))
     const b = renderHook(() => fresh.useFeatureFlag('b'))

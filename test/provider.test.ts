@@ -6,7 +6,7 @@ import {
   useFeatureFlag,
   useFeatureFlagEnabled,
   type FeatureFlags,
-} from './index.js'
+} from '../src/index.js'
 
 const html = document.documentElement
 let renders: string[] = []
@@ -41,18 +41,21 @@ afterEach(() => {
 
 test('client-only: first render uses the provider, with no re-render', async () => {
   renderWith({ beta: 'enabled' })
-  // Let the observer deliver the provider's own writes
   await update(() => {})
   expect(renders).toEqual(['enabled:true'])
 })
 
-test('writes flags onto <html> on attach, with lowercase names', () => {
-  renderWith({ Beta: 'enabled', searchTypos: 'on' })
-  expect(html.getAttribute('data-flag-beta')).toBe('enabled')
-  expect(html.getAttribute('data-flag-searchtypos')).toBe('on')
+test('does not write flags onto <html>', () => {
+  renderWith({ beta: 'enabled' })
+  expect(html.hasAttribute('data-flag-beta')).toBe(false)
 })
 
-test('keeps attributes already on <html>', async () => {
+test('matches provider names case-insensitively', () => {
+  renderWith({ Beta: 'enabled' })
+  expect(renders).toEqual(['enabled:true'])
+})
+
+test('an attribute already on <html> overrides the provider', async () => {
   html.setAttribute('data-flag-beta', 'disabled')
   renderWith({ beta: 'enabled' })
   await update(() => {})
@@ -102,9 +105,29 @@ test('ignores later changes to the flags prop', () => {
       createElement(Flags),
     ),
   )
-  expect(html.getAttribute('data-flag-beta')).toBe('enabled')
-  expect(html.hasAttribute('data-flag-other')).toBe(false)
   expect(renders.at(-1)).toBe('enabled:true')
+})
+
+test('nested providers each keep their own values', async () => {
+  renders = []
+  render(
+    createElement(
+      FeatureFlagsProvider,
+      { flags: { beta: 'enabled' } },
+      createElement(Flags),
+      createElement(
+        FeatureFlagsProvider,
+        { flags: { beta: 'disabled' } },
+        createElement(Flags),
+      ),
+    ),
+  )
+  await update(() => {})
+  expect(renders).toEqual(['enabled:true', 'disabled:false'])
+
+  // An override on <html> applies to both
+  await update(() => html.setAttribute('data-flag-beta', 'b'))
+  expect(renders.slice(-2)).toEqual(['b:false', 'b:false'])
 })
 
 test('works under StrictMode', async () => {
@@ -120,16 +143,21 @@ test('works under StrictMode', async () => {
       ),
     ),
   )
-  expect(html.getAttribute('data-flag-beta')).toBe('enabled')
+  expect(renders.at(-1)).toBe('enabled:true')
   await update(() => html.setAttribute('data-flag-beta', 'disabled'))
   expect(renders.at(-1)).toBe('disabled:false')
 })
 
-test('skips invalid flag names instead of throwing', () => {
-  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  renderWith({ 'bad name': 'on', beta: 'enabled' })
-  expect(html.getAttribute('data-flag-beta')).toBe('enabled')
-  expect(warn).toHaveBeenCalledOnce()
+test('accepts flag names that are not valid attribute names', () => {
+  renders = []
+  render(
+    createElement(
+      FeatureFlagsProvider,
+      { flags: { 'bad name': 'on', beta: 'enabled' } },
+      createElement(Flags),
+    ),
+  )
+  expect(renders).toEqual(['enabled:true'])
 })
 
 test('re-rendering the provider with a new flags object does not re-render consumers', () => {

@@ -1,6 +1,6 @@
 # html-feature-flags
 
-React hooks for feature flags stored as `data-flag-*` attributes on `<html>`. Set flags on a provider, change them from anything that can touch the DOM (an inline script, a tag manager, a test, devtools), and components using them re-render.
+React hooks for feature flags. Set the base flags on a provider, override them with `data-flag-*` attributes on `<html>` from anything that can touch the DOM (an inline script, a tag manager, a test, devtools), and components using them re-render.
 
 Requires React 19.
 
@@ -39,27 +39,21 @@ function Example() {
 
 ## Changing flags outside React
 
-After the provider mounts, the flags are on `<html>`:
-
-```html
-<html data-flag-beta="enabled" data-flag-ab-test="b"></html>
-```
-
-Change an attribute and the hooks update:
+A `data-flag-*` attribute on `<html>` overrides the provider's value. Set one and the hooks update:
 
 ```js
 document.documentElement.setAttribute('data-flag-beta', 'disabled')
 ```
 
+- The provider doesn't write its flags to `<html>`. Only overrides live there.
 - To turn a flag off, set another value such as `disabled`. Removing the attribute falls back to the provider's value.
-- Attributes already on `<html>` when the provider mounts are kept, so a script that runs first wins.
 - Without a provider, the hooks read `<html>` only.
 
 ## API
 
 ### `<FeatureFlagsProvider flags={...}>`
 
-Supplies flags for server rendering and hydration, and writes them to `<html>` on mount. `flags` is read once; later changes are ignored. Names are lowercased, so `{ abTest: 'b' }` becomes `data-flag-abtest`.
+Supplies the base flags for server rendering, hydration and the client. `flags` is read once; later changes are ignored. Names are case-insensitive, so `{ abTest: 'b' }` is overridden by `data-flag-abtest`. Nested providers each keep their own values.
 
 ### `useFeatureFlag(name): string | undefined`
 
@@ -77,7 +71,7 @@ Under a provider, server rendering and hydration use the provider's values, so t
 
 The package is marked `'use client'`, so a Server Component such as a Next.js root layout can render the provider directly.
 
-The attributes are written on mount, so they aren't in the server HTML. If a script adds flag attributes to `<html>` before hydration and React renders `<html>`, React logs a development-only warning. Add `suppressHydrationWarning` to `<html>` to silence it.
+If a script adds flag attributes to `<html>` before hydration and React renders `<html>`, React logs a development-only warning. Add `suppressHydrationWarning` to `<html>` to silence it.
 
 ## License
 

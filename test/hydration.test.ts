@@ -13,7 +13,7 @@ import {
   FeatureFlagsProvider,
   useFeatureFlag,
   useFeatureFlagEnabled,
-} from './index.js'
+} from '../src/index.js'
 
 const html = document.documentElement
 let root: Root | undefined
@@ -66,12 +66,12 @@ afterEach(() => {
   for (const { name } of [...html.attributes]) html.removeAttribute(name)
 })
 
-test('hydrates to the provider values in one render, then writes them to <html>', async () => {
+test('hydrates to the provider values in one render', async () => {
   const errors = await hydrate(withProvider(createElement(Flags)))
   await update(() => {})
   expect(errors).toEqual([])
   expect(renders).toEqual(['enabled:true'])
-  expect(html.getAttribute('data-flag-beta')).toBe('enabled')
+  expect(html.hasAttribute('data-flag-beta')).toBe(false)
 })
 
 test('without a provider, hydrates unset then updates from the DOM', async () => {
@@ -105,7 +105,7 @@ test('a Suspense boundary hydrating later still matches the server HTML', async 
     () => new Promise<{ default: ComponentType }>((r) => (resolve = r)),
   )
   // The server renders Flags directly; the client has to wait for the lazy
-  // component, so this boundary hydrates after the provider has attached.
+  // component, so this boundary hydrates after the rest of the tree.
   const errors = await hydrate(
     withProvider(
       createElement(Suspense, { fallback: null }, createElement(Flags)),
@@ -115,9 +115,8 @@ test('a Suspense boundary hydrating later still matches the server HTML', async 
     ),
   )
   expect(renders).toEqual([])
-  expect(html.getAttribute('data-flag-beta')).toBe('enabled')
 
-  // Changed before the boundary hydrates
+  // Overridden before the boundary hydrates
   html.setAttribute('data-flag-beta', 'disabled')
   await act(async () => {
     resolve({ default: Flags })

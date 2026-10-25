@@ -14,8 +14,7 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "src",
-    "!src/**/*.test.ts"
+    "src"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -35,7 +34,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.test.json",
     "test": "vitest --run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "coverage": "vitest --run --coverage"
   },
   "peerDependencies": {
     "react": "^19.0.0"
@@ -47,6 +47,7 @@
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@vitest/coverage-v8": "5.0.5",
     "eslint": "10.13.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.7",

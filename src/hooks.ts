@@ -1,17 +1,17 @@
-import { useSyncExternalStore } from 'react'
-import { isEnabled, read, subscribe } from './dom-store.js'
-import { useFlagSource } from './provider.js'
+import { useContext, useSyncExternalStore } from 'react'
+import { FlagsContext } from './context.js'
+import { read, subscribe } from './dom-store.js'
+import { isEnabled, rawValue } from './flags.js'
 
 function useFlag<T>(name: string, select: (value: string | undefined) => T): T {
-  const source = useFlagSource()
+  // Provider keys are lowercased, matching HTML attribute names
+  const base = useContext(FlagsContext)?.get(name.toLowerCase())
   return useSyncExternalStore(
     subscribe,
-    () => select(source ? source.client(name) : read(name)),
-    () => select(source?.server(name)),
+    () => select(read(name) ?? base), // <html> overrides the provider
+    () => select(base),
   )
 }
-
-const identity = (value: string | undefined) => value
 
 /**
  * Value of the `data-flag-<name>` attribute on `<html>`, or `undefined` when
@@ -21,7 +21,7 @@ const identity = (value: string | undefined) => value
  * During server rendering and hydration, reads from `FeatureFlagsProvider`.
  */
 export function useFeatureFlag(name: string): string | undefined {
-  return useFlag(name, identity)
+  return useFlag(name, rawValue)
 }
 
 /**

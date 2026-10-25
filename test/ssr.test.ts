@@ -8,7 +8,7 @@ import {
   useFeatureFlag,
   useFeatureFlagEnabled,
   type FeatureFlags,
-} from './index.js'
+} from '../src/index.js'
 
 function Flags({ name = 'beta' }: { name?: string }) {
   const value = useFeatureFlag(name)
